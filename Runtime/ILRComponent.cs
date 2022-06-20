@@ -8,7 +8,6 @@
 //                  SEE LICENSE.md FOR MORE DETAILS.                   //
 //---------------------------------------------------------------------//
 using UnityEngine;
-using LuaInterface;
 using System;
 using System.Collections.Generic;
 using System.Text;
