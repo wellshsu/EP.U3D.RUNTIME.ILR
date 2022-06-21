@@ -59,7 +59,7 @@ namespace EP.U3D.RUNTIME.ILR
         [NonSerialized] public bool InitOK;
         [NonSerialized] public IILRComponent Object;
         [NonSerialized] public Type Type;
-        public List<Field> Fields = new();
+        public List<Field> Fields = new List<Field>();
 
         #region for loadasset hook
         public static Assembly MainDLL; // for debug
