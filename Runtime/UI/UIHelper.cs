@@ -236,7 +236,7 @@ namespace EP.U3D.RUNTIME.ILR.UI
             Transform root = GetTransform(parentObj, path);
             if (root && root.gameObject)
             {
-                if (type.IsSubclassOf(typeof(MonoBehaviour)))
+                if (type.IsSubclassOf(ClazzUnityObject))
                 {
                     return root.gameObject.AddComponent(type);
                 }
