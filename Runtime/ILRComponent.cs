@@ -31,6 +31,7 @@ namespace EP.U3D.RUNTIME.ILR
         public virtual void FixedUpdate() { }
         public virtual void OnDestroy() { }
         public virtual void OnTriggerEnter(Collider other) { }
+        public virtual void OnTriggerStay(Collider other) { }
         public virtual void OnTriggerExit(Collider other) { }
         public virtual void OnCollisionEnter(Collision collision) { }
         public virtual void OnCollisionExit(Collision collision) { }
@@ -318,6 +319,11 @@ namespace EP.U3D.RUNTIME.ILR
         protected virtual void OnTriggerEnter(Collider other)
         {
             Object?.OnTriggerEnter(other);
+        }
+
+        protected virtual void OnTriggerStay(Collider other)
+        {
+            Object?.OnTriggerStay(other);
         }
 
         protected virtual void OnTriggerExit(Collider other)
