@@ -134,12 +134,27 @@ namespace EP.U3D.RUNTIME.ILR.UI
                 else
                 {
                     ILRComponent[] comps = ILRComponent.GetsInParent(root.gameObject, type, includeInactive);
-                    List<object> rets = new List<object>();
-                    for (int i = 0; i < comps.Length; i++)
+                    if (comps.Length == 0)
                     {
-                        rets.Add(comps[i].Object);
+                        return NIL_OBJECT_ARR;
                     }
-                    return rets.ToArray();
+                    else
+                    {
+                        System.Array arr;
+                        if (type is ILRuntime.Reflection.ILRuntimeType itype)
+                        {
+                            arr = System.Array.CreateInstance(itype.ILType.TypeForCLR, comps.Length);
+                        }
+                        else
+                        {
+                            arr = System.Array.CreateInstance(type, comps.Length);
+                        }
+                        for (int i = 0; i < comps.Length; i++)
+                        {
+                            arr.SetValue(comps[i].Object, i);
+                        }
+                        return arr as object[];
+                    }
                 }
             }
             else
@@ -171,12 +186,27 @@ namespace EP.U3D.RUNTIME.ILR.UI
                 else
                 {
                     ILRComponent[] comps = ILRComponent.Gets(root.gameObject, type);
-                    List<object> rets = new List<object>();
-                    for (int i = 0; i < comps.Length; i++)
+                    if (comps.Length == 0)
                     {
-                        rets.Add(comps[i].Object);
+                        return NIL_OBJECT_ARR;
                     }
-                    return rets.ToArray();
+                    else
+                    {
+                        System.Array arr;
+                        if (type is ILRuntime.Reflection.ILRuntimeType itype)
+                        {
+                            arr = System.Array.CreateInstance(itype.ILType.TypeForCLR, comps.Length);
+                        }
+                        else
+                        {
+                            arr = System.Array.CreateInstance(type, comps.Length);
+                        }
+                        for (int i = 0; i < comps.Length; i++)
+                        {
+                            arr.SetValue(comps[i].Object, i);
+                        }
+                        return arr as object[];
+                    }
                 }
             }
             else
@@ -195,7 +225,7 @@ namespace EP.U3D.RUNTIME.ILR.UI
             if (type == null)
             {
                 Helper.LogError("missing type argument");
-                return NIL_OBJECT_ARR;
+                return null;
             }
             Transform root = GetTransform(parentObj, path);
             if (root && root.gameObject)
@@ -207,12 +237,27 @@ namespace EP.U3D.RUNTIME.ILR.UI
                 else
                 {
                     ILRComponent[] comps = ILRComponent.GetsInChildren(root.gameObject, type, includeInactive);
-                    List<object> rets = new List<object>();
-                    for (int i = 0; i < comps.Length; i++)
+                    if (comps.Length == 0)
                     {
-                        rets.Add(comps[i].Object);
+                        return NIL_OBJECT_ARR;
                     }
-                    return rets.ToArray();
+                    else
+                    {
+                        System.Array arr;
+                        if (type is ILRuntime.Reflection.ILRuntimeType itype)
+                        {
+                            arr = System.Array.CreateInstance(itype.ILType.TypeForCLR, comps.Length);
+                        }
+                        else
+                        {
+                            arr = System.Array.CreateInstance(type, comps.Length);
+                        }
+                        for (int i = 0; i < comps.Length; i++)
+                        {
+                            arr.SetValue(comps[i].Object, i);
+                        }
+                        return arr as object[];
+                    }
                 }
             }
             else

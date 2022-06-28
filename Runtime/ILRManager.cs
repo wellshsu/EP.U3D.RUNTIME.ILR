@@ -93,20 +93,20 @@ namespace EP.U3D.RUNTIME.ILR
         /// </summary>
         /// <param name="_type"></param>
         /// <returns></returns>
-        static public object CreateInstance(Type _type)
+        public static object CreateInstance(Type _type, params object[] args)
         {
-            object instance = null;
+            object instance;
             if (_type is ILRuntime.Reflection.ILRuntimeType ilrType)
             {
-                instance = ilrType.ILType.Instantiate();
+                instance = ilrType.ILType.Instantiate(args);
             }
             else if (_type is ILRuntime.Reflection.ILRuntimeWrapperType ilrWrapperType)
             {
-                instance = Activator.CreateInstance(ilrWrapperType.RealType);
+                instance = Activator.CreateInstance(ilrWrapperType.RealType, args);
             }
             else
             {
-                instance = Activator.CreateInstance(_type);
+                instance = Activator.CreateInstance(_type, args);
             }
             return instance;
         }
