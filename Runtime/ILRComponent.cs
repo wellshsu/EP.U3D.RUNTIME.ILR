@@ -261,6 +261,14 @@ namespace EP.U3D.RUNTIME.ILR
                                 ffield.SetValue(Object, field.OValue);
                             }
                         }
+                        else
+                        {
+                            if (ffield.FieldType.IsEnum)
+                            {
+                                int v = BitConverter.ToInt32(field.BValue, 0);
+                                ffield.SetValue(Object, v);
+                            }
+                        }
                     }
                 }
             }
