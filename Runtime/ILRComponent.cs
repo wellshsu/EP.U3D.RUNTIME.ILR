@@ -202,7 +202,7 @@ namespace EP.U3D.RUNTIME.ILR
             InitOK = true;
         }
 
-        private void SetField(string stype, Type type, byte[] bvalue, UnityEngine.Object ovalue, out object fvalue)
+        private void SetField(string key, string stype, Type type, byte[] bvalue, UnityEngine.Object ovalue, out object fvalue)
         {
             fvalue = null;
             if (stype == "System.Int32")
@@ -271,6 +271,7 @@ namespace EP.U3D.RUNTIME.ILR
                     }
                 }
             }
+            if (fvalue == null) Helper.LogWarning("parse {0}.{1}({2}) of component {3} error", FullName, key, stype, name);
         }
 
         protected virtual void Awake()
@@ -303,7 +304,7 @@ namespace EP.U3D.RUNTIME.ILR
                             {
                                 for (int j = 0; j < field.LBValue.Count; j++)
                                 {
-                                    SetField(field.Type, type, field.LBValue[j].Data, null, out object fvalue);
+                                    SetField(field.Key, field.Type, type, field.LBValue[j].Data, null, out object fvalue);
                                     arr.SetValue(fvalue, j);
                                 }
                             }
@@ -314,7 +315,7 @@ namespace EP.U3D.RUNTIME.ILR
                                     UnityEngine.Object ovalue = field.LOValue[j];
                                     if (ovalue)
                                     {
-                                        SetField(field.Type, type, null, ovalue, out object fvalue);
+                                        SetField(field.Key, field.Type, type, null, ovalue, out object fvalue);
                                         arr.SetValue(fvalue, j);
                                     }
                                 }
@@ -341,7 +342,7 @@ namespace EP.U3D.RUNTIME.ILR
                             {
                                 for (int j = 0; j < field.LBValue.Count; j++)
                                 {
-                                    SetField(field.Type, type, field.LBValue[j].Data, null, out object fvalue);
+                                    SetField(field.Key, field.Type, type, field.LBValue[j].Data, null, out object fvalue);
                                     add.Invoke(list, new object[] { fvalue });
                                 }
                             }
@@ -349,7 +350,7 @@ namespace EP.U3D.RUNTIME.ILR
                             {
                                 for (int j = 0; j < field.LOValue.Count; j++)
                                 {
-                                    SetField(field.Type, type, null, field.LOValue[j], out object fvalue);
+                                    SetField(field.Key, field.Type, type, null, field.LOValue[j], out object fvalue);
                                     add.Invoke(list, new object[] { fvalue });
                                 }
                             }
@@ -358,7 +359,7 @@ namespace EP.U3D.RUNTIME.ILR
                     }
                     else
                     {
-                        SetField(field.Type, ffield.FieldType, field.BValue, field.OValue, out object fvalue);
+                        SetField(field.Key, field.Type, ffield.FieldType, field.BValue, field.OValue, out object fvalue);
                         ffield.SetValue(Object, fvalue);
                     }
                 }
