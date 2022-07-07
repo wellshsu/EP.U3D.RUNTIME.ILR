@@ -40,17 +40,37 @@ namespace EP.U3D.RUNTIME.ILR
     public class ILRComponent : MonoBehaviour
     {
         [Serializable]
+        public class Byte
+        {
+            public byte[] Data;
+            public Byte(byte[] data = null) { Data = data; }
+        }
+
+        [Serializable]
         public class Field
         {
             public string Key;
             public string Type;
             public UnityEngine.Object OValue;
             public byte[] BValue = new byte[16]; // max struct is vector4 with 16 bytes.
+            public List<UnityEngine.Object> LOValue; // list of OValue
+            public List<Byte> LBValue; // list of BValue
+            public bool BTArray = false; // is array type
+            public bool BTList = false; // is list type
+            public bool BLBValue = false; // is use LBValue for list
+            [NonSerialized] public bool BLShow = false; // is show list
 
             public void Reset()
             {
+                Type = "";
                 OValue = null;
                 BValue = new byte[16];
+                LOValue = null;
+                LBValue = null;
+                BTArray = false;
+                BTList = false;
+                BLBValue = false;
+                BLShow = false;
             }
         }
 
@@ -182,6 +202,77 @@ namespace EP.U3D.RUNTIME.ILR
             InitOK = true;
         }
 
+        private void SetField(string stype, Type type, byte[] bvalue, UnityEngine.Object ovalue, out object fvalue)
+        {
+            fvalue = null;
+            if (stype == "System.Int32")
+            {
+                fvalue = BitConverter.ToInt32(bvalue, 0);
+            }
+            else if (stype == "System.Int64")
+            {
+                fvalue = BitConverter.ToInt64(bvalue, 0);
+            }
+            else if (stype == "System.Single")
+            {
+                fvalue = BitConverter.ToSingle(bvalue, 0);
+            }
+            else if (stype == "System.Double")
+            {
+                fvalue = BitConverter.ToDouble(bvalue, 0);
+            }
+            else if (stype == "System.Boolean")
+            {
+                fvalue = BitConverter.ToBoolean(bvalue, 0);
+            }
+            else if (stype == "UnityEngine.Vector2")
+            {
+                fvalue = Helper.ByteToStruct<Vector2>(bvalue);
+            }
+            else if (stype == "UnityEngine.Vector3")
+            {
+                fvalue = Helper.ByteToStruct<Vector3>(bvalue);
+            }
+            else if (stype == "UnityEngine.Vector4")
+            {
+                fvalue = Helper.ByteToStruct<Vector4>(bvalue);
+            }
+            else if (stype == "UnityEngine.Color")
+            {
+                fvalue = Helper.ByteToStruct<Color>(bvalue);
+            }
+            else if (stype == "System.String")
+            {
+                fvalue = Encoding.UTF8.GetString(bvalue);
+            }
+            else
+            {
+                if (ovalue)
+                {
+                    if (ovalue is ILRComponent)
+                    {
+                        ILRComponent c = ovalue as ILRComponent;
+                        if (c.FullName == stype)
+                        {
+                            if (!c.Inited) c.Init();
+                            fvalue = c.Object;
+                        }
+                    }
+                    else
+                    {
+                        fvalue = ovalue;
+                    }
+                }
+                else
+                {
+                    if (type.IsEnum)
+                    {
+                        fvalue = BitConverter.ToInt32(bvalue, 0);
+                    }
+                }
+            }
+        }
+
         protected virtual void Awake()
         {
             if (!Inited) Init();
@@ -193,82 +284,82 @@ namespace EP.U3D.RUNTIME.ILR
                     var field = Fields[i];
                     var ffield = Type.GetField(field.Key);
                     if (ffield == null) continue;
-                    if (field.Type == "System.Int32")
+                    if (field.BTArray || field.BTList)
                     {
-                        int v = BitConverter.ToInt32(field.BValue, 0);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "System.Int64")
-                    {
-                        long v = BitConverter.ToInt64(field.BValue, 0);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "System.Single")
-                    {
-                        float v = BitConverter.ToSingle(field.BValue, 0);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "System.Double")
-                    {
-                        double v = BitConverter.ToDouble(field.BValue, 0);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "System.Boolean")
-                    {
-                        bool v = BitConverter.ToBoolean(field.BValue, 0);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "UnityEngine.Vector2")
-                    {
-                        Vector2 v = Helper.ByteToStruct<Vector2>(field.BValue);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "UnityEngine.Vector3")
-                    {
-                        Vector3 v = Helper.ByteToStruct<Vector3>(field.BValue);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "UnityEngine.Vector4")
-                    {
-                        Vector4 v = Helper.ByteToStruct<Vector4>(field.BValue);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "UnityEngine.Color")
-                    {
-                        Color v = Helper.ByteToStruct<Color>(field.BValue);
-                        ffield.SetValue(Object, v);
-                    }
-                    else if (field.Type == "System.String")
-                    {
-                        string v = Encoding.UTF8.GetString(field.BValue);
-                        ffield.SetValue(Object, v);
-                    }
-                    else
-                    {
-                        if (field.OValue)
+                        var length = field.BLBValue ? field.LBValue.Count : field.LOValue.Count;
+                        if (field.BTArray)
                         {
-                            if (field.OValue is ILRComponent)
+                            Array arr;
+                            var type = ffield.FieldType.GetElementType();
+                            if (type is ILRuntime.Reflection.ILRuntimeType itype)
                             {
-                                ILRComponent c = field.OValue as ILRComponent;
-                                if (c.FullName == field.Type)
+                                arr = Array.CreateInstance(itype.ILType.TypeForCLR, length);
+                            }
+                            else
+                            {
+                                arr = Array.CreateInstance(type, length);
+                            }
+                            if (field.BLBValue)
+                            {
+                                for (int j = 0; j < field.LBValue.Count; j++)
                                 {
-                                    if (!c.Inited) c.Init();
-                                    ffield.SetValue(Object, c.Object);
+                                    SetField(field.Type, type, field.LBValue[j].Data, null, out object fvalue);
+                                    arr.SetValue(fvalue, j);
                                 }
                             }
                             else
                             {
-                                ffield.SetValue(Object, field.OValue);
+                                for (int j = 0; j < field.LOValue.Count; j++)
+                                {
+                                    UnityEngine.Object ovalue = field.LOValue[j];
+                                    if (ovalue)
+                                    {
+                                        SetField(field.Type, type, null, ovalue, out object fvalue);
+                                        arr.SetValue(fvalue, j);
+                                    }
+                                }
                             }
+                            ffield.SetValue(Object, arr);
                         }
                         else
                         {
-                            if (ffield.FieldType.IsEnum)
+                            Type ltype = typeof(List<>);
+                            object list;
+                            var type = ffield.FieldType.GetGenericArguments()[0];
+                            if (type is ILRuntime.Reflection.ILRuntimeType itype)
                             {
-                                int v = BitConverter.ToInt32(field.BValue, 0);
-                                ffield.SetValue(Object, v);
+                                Type ntype = ltype.MakeGenericType(new Type[] { itype.ILType.TypeForCLR });
+                                list = Activator.CreateInstance(ntype);
                             }
+                            else
+                            {
+                                Type ntype = ltype.MakeGenericType(new Type[] { type });
+                                list = Activator.CreateInstance(ntype);
+                            }
+                            MethodInfo add = list.GetType().GetMethod("Add");
+                            if (field.BLBValue)
+                            {
+                                for (int j = 0; j < field.LBValue.Count; j++)
+                                {
+                                    SetField(field.Type, type, field.LBValue[j].Data, null, out object fvalue);
+                                    add.Invoke(list, new object[] { fvalue });
+                                }
+                            }
+                            else
+                            {
+                                for (int j = 0; j < field.LOValue.Count; j++)
+                                {
+                                    SetField(field.Type, type, null, field.LOValue[j], out object fvalue);
+                                    add.Invoke(list, new object[] { fvalue });
+                                }
+                            }
+                            ffield.SetValue(Object, list);
                         }
+                    }
+                    else
+                    {
+                        SetField(field.Type, ffield.FieldType, field.BValue, field.OValue, out object fvalue);
+                        ffield.SetValue(Object, fvalue);
                     }
                 }
             }
