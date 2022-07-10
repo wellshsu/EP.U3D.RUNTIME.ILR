@@ -14,6 +14,10 @@ using System.Text;
 using System.Reflection;
 using ILRuntime.Runtime.Intepreter;
 using EP.U3D.LIBRARY.BASE;
+using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace EP.U3D.RUNTIME.ILR
 {
@@ -119,7 +123,7 @@ namespace EP.U3D.RUNTIME.ILR
                     if (DType != null)
                     {
                         var o = ILRManager.CreateInstance(DType);
-                        if (Constants.SCRIPT_BUNDLE_MODE)
+                        if (Constants.SCRIPT_BUNDLE_MODE && ILRManager.AppDomain != null)
                         {
                             Object = (o as ILTypeInstance).CLRInstance as IILRComponent;
                         }
@@ -155,7 +159,7 @@ namespace EP.U3D.RUNTIME.ILR
                         enabled = false;
                         return;
                     }
-                    if (Constants.SCRIPT_BUNDLE_MODE)
+                    if (Constants.SCRIPT_BUNDLE_MODE && ILRManager.AppDomain != null)
                     {
                         var types = ILRManager.GetTypes();
                         foreach (var t in types)
@@ -174,7 +178,7 @@ namespace EP.U3D.RUNTIME.ILR
                     if (Type != null)
                     {
                         var o = ILRManager.CreateInstance(Type);
-                        if (Constants.SCRIPT_BUNDLE_MODE)
+                        if (Constants.SCRIPT_BUNDLE_MODE && ILRManager.AppDomain != null)
                         {
                             Object = (o as ILTypeInstance).CLRInstance as IILRComponent;
                         }
@@ -274,8 +278,45 @@ namespace EP.U3D.RUNTIME.ILR
             if (fvalue == null) Helper.LogWarning("parse {0}.{1}({2}) of component {3} error", FullName, key, stype, name);
         }
 
+#if UNITY_EDITOR
+        private void sceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            SceneManager.sceneLoaded -= sceneLoaded;
+            var c = comps.Count;
+            AfterHook();
+            Helper.Log("after scene loaded and inited {0} depend ilrcomponents.", c);
+        }
+#endif
+
         protected virtual void Awake()
         {
+#if UNITY_EDITOR
+            // [20220710]: single debug
+            if (ILRManager.AppDomain == null)
+            {
+                if (frame == false)
+                {
+                    BeforeHook();
+                    SceneManager.sceneLoaded += sceneLoaded;
+                }
+                if (MainDLL == null)
+                {
+                    var types = UnityEditor.TypeCache.GetTypesDerivedFrom<IILRComponent>();
+                    for (int i = 0; i < types.Count; i++)
+                    {
+                        var type = types[i];
+                        var dll = Assembly.GetAssembly(type);
+                        if (dll != null && dll.FullName.Contains("Assembly-CSharp"))
+                        {
+                            MainDLL = dll;
+                            break;
+                        }
+                    }
+                    if (MainDLL == null) Helper.LogError("missing dll for ilrcomponent debug");
+                    else Helper.Log("using [{0}] for ilrcomponent debug", MainDLL.FullName);
+                }
+            }
+#endif
             if (!Inited) Init();
             if (!InitOK) return;
             if (Fields != null && Fields.Count > 0)
