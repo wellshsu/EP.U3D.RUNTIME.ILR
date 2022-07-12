@@ -112,8 +112,45 @@ namespace EP.U3D.RUNTIME.ILR
         }
         #endregion
 
+#if UNITY_EDITOR
+        private void sceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            SceneManager.sceneLoaded -= sceneLoaded;
+            var c = comps.Count;
+            AfterHook();
+            Helper.Log("after scene loaded and inited {0} depend ilrcomponents.", c);
+        }
+#endif
+
         public void Init()
         {
+#if UNITY_EDITOR
+            // [20220710]: single debug
+            if (ILRManager.AppDomain == null)
+            {
+                if (frame == false)
+                {
+                    BeforeHook();
+                    SceneManager.sceneLoaded += sceneLoaded;
+                }
+                if (MainDLL == null)
+                {
+                    var types = UnityEditor.TypeCache.GetTypesDerivedFrom<IILRComponent>();
+                    for (int i = 0; i < types.Count; i++)
+                    {
+                        var type = types[i];
+                        var dll = Assembly.GetAssembly(type);
+                        if (dll != null && dll.FullName.Contains("Assembly-CSharp"))
+                        {
+                            MainDLL = dll;
+                            break;
+                        }
+                    }
+                    if (MainDLL == null) Helper.LogError("missing dll for ilrcomponent debug");
+                    else Helper.Log("using [{0}] for ilrcomponent debug", MainDLL.FullName);
+                }
+            }
+#endif
             if (Inited) return;
             Inited = true;
             if (DType != null)
@@ -203,122 +240,6 @@ namespace EP.U3D.RUNTIME.ILR
             }
             Object.transform = transform;
             Object.gameObject = gameObject;
-            InitOK = true;
-        }
-
-        private void SetField(string key, string stype, Type type, byte[] bvalue, UnityEngine.Object ovalue, out object fvalue)
-        {
-            fvalue = null;
-            if (stype == "System.Int32")
-            {
-                fvalue = BitConverter.ToInt32(bvalue, 0);
-            }
-            else if (stype == "System.Int64")
-            {
-                fvalue = BitConverter.ToInt64(bvalue, 0);
-            }
-            else if (stype == "System.Single")
-            {
-                fvalue = BitConverter.ToSingle(bvalue, 0);
-            }
-            else if (stype == "System.Double")
-            {
-                fvalue = BitConverter.ToDouble(bvalue, 0);
-            }
-            else if (stype == "System.Boolean")
-            {
-                fvalue = BitConverter.ToBoolean(bvalue, 0);
-            }
-            else if (stype == "UnityEngine.Vector2")
-            {
-                fvalue = Helper.ByteToStruct<Vector2>(bvalue);
-            }
-            else if (stype == "UnityEngine.Vector3")
-            {
-                fvalue = Helper.ByteToStruct<Vector3>(bvalue);
-            }
-            else if (stype == "UnityEngine.Vector4")
-            {
-                fvalue = Helper.ByteToStruct<Vector4>(bvalue);
-            }
-            else if (stype == "UnityEngine.Color")
-            {
-                fvalue = Helper.ByteToStruct<Color>(bvalue);
-            }
-            else if (stype == "System.String")
-            {
-                fvalue = Encoding.UTF8.GetString(bvalue);
-            }
-            else
-            {
-                if (ovalue)
-                {
-                    if (ovalue is ILRComponent)
-                    {
-                        ILRComponent c = ovalue as ILRComponent;
-                        if (c.FullName == stype)
-                        {
-                            if (!c.Inited) c.Init();
-                            fvalue = c.Object;
-                        }
-                    }
-                    else
-                    {
-                        fvalue = ovalue;
-                    }
-                }
-                else
-                {
-                    if (type.IsEnum)
-                    {
-                        fvalue = BitConverter.ToInt32(bvalue, 0);
-                    }
-                }
-            }
-            if (fvalue == null) Helper.LogWarning("parse {0}.{1}({2}) of component {3} error", FullName, key, stype, name);
-        }
-
-#if UNITY_EDITOR
-        private void sceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            SceneManager.sceneLoaded -= sceneLoaded;
-            var c = comps.Count;
-            AfterHook();
-            Helper.Log("after scene loaded and inited {0} depend ilrcomponents.", c);
-        }
-#endif
-
-        protected virtual void Awake()
-        {
-#if UNITY_EDITOR
-            // [20220710]: single debug
-            if (ILRManager.AppDomain == null)
-            {
-                if (frame == false)
-                {
-                    BeforeHook();
-                    SceneManager.sceneLoaded += sceneLoaded;
-                }
-                if (MainDLL == null)
-                {
-                    var types = UnityEditor.TypeCache.GetTypesDerivedFrom<IILRComponent>();
-                    for (int i = 0; i < types.Count; i++)
-                    {
-                        var type = types[i];
-                        var dll = Assembly.GetAssembly(type);
-                        if (dll != null && dll.FullName.Contains("Assembly-CSharp"))
-                        {
-                            MainDLL = dll;
-                            break;
-                        }
-                    }
-                    if (MainDLL == null) Helper.LogError("missing dll for ilrcomponent debug");
-                    else Helper.Log("using [{0}] for ilrcomponent debug", MainDLL.FullName);
-                }
-            }
-#endif
-            if (!Inited) Init();
-            if (!InitOK) return;
             if (Fields != null && Fields.Count > 0)
             {
                 for (int i = 0; i < Fields.Count; i++)
@@ -410,6 +331,85 @@ namespace EP.U3D.RUNTIME.ILR
                 Fields.Clear();
                 Fields = null;
             }
+            InitOK = true;
+        }
+
+        private void SetField(string key, string stype, Type type, byte[] bvalue, UnityEngine.Object ovalue, out object fvalue)
+        {
+            fvalue = null;
+            if (stype == "System.Int32")
+            {
+                fvalue = BitConverter.ToInt32(bvalue, 0);
+            }
+            else if (stype == "System.Int64")
+            {
+                fvalue = BitConverter.ToInt64(bvalue, 0);
+            }
+            else if (stype == "System.Single")
+            {
+                fvalue = BitConverter.ToSingle(bvalue, 0);
+            }
+            else if (stype == "System.Double")
+            {
+                fvalue = BitConverter.ToDouble(bvalue, 0);
+            }
+            else if (stype == "System.Boolean")
+            {
+                fvalue = BitConverter.ToBoolean(bvalue, 0);
+            }
+            else if (stype == "UnityEngine.Vector2")
+            {
+                fvalue = Helper.ByteToStruct<Vector2>(bvalue);
+            }
+            else if (stype == "UnityEngine.Vector3")
+            {
+                fvalue = Helper.ByteToStruct<Vector3>(bvalue);
+            }
+            else if (stype == "UnityEngine.Vector4")
+            {
+                fvalue = Helper.ByteToStruct<Vector4>(bvalue);
+            }
+            else if (stype == "UnityEngine.Color")
+            {
+                fvalue = Helper.ByteToStruct<Color>(bvalue);
+            }
+            else if (stype == "System.String")
+            {
+                fvalue = Encoding.UTF8.GetString(bvalue);
+            }
+            else
+            {
+                if (ovalue)
+                {
+                    if (ovalue is ILRComponent)
+                    {
+                        ILRComponent c = ovalue as ILRComponent;
+                        if (c.FullName == stype)
+                        {
+                            if (!c.Inited) c.Init();
+                            fvalue = c.Object;
+                        }
+                    }
+                    else
+                    {
+                        fvalue = ovalue;
+                    }
+                }
+                else
+                {
+                    if (type.IsEnum)
+                    {
+                        fvalue = BitConverter.ToInt32(bvalue, 0);
+                    }
+                }
+            }
+            if (fvalue == null) Helper.LogWarning("parse {0}.{1}({2}) of component {3} error", FullName, key, stype, name);
+        }
+
+        protected virtual void Awake()
+        {
+            if (!Inited) Init();
+            if (!InitOK) return;
             Object?.Awake();
         }
 
@@ -565,6 +565,7 @@ namespace EP.U3D.RUNTIME.ILR
             for (int i = 0; i < coms.Length; i++)
             {
                 var com = coms[i];
+                if (com && !com.Inited) com.Init();
                 if (com != null && com.Type != null)
                 {
                     Type meta = com.Type;
