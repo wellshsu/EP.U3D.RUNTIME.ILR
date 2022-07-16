@@ -92,12 +92,12 @@ namespace EP.U3D.RUNTIME.ILR
         public static bool frame = false;
         public static readonly List<ILRComponent> comps = new List<ILRComponent>();
         ILRComponent() { if (frame) comps.Add(this); }
-        public static void BeforeHook()
+        public static void BeforeHook(string asset = "")
         {
             frame = true;
         }
 
-        public static void AfterHook()
+        public static void AfterHook(string asset = "")
         {
             if (comps.Count > 0)
             {
