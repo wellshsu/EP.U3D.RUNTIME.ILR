@@ -22,7 +22,7 @@ namespace EP.U3D.RUNTIME.ILR
     public static class ILRManager
     {
         public static AppDomain AppDomain { get; private set; }
-        private static FileStream dllFs = null;
+        private static MemoryStream dllFs = null;
         private static FileStream pdbFs = null;
 
         public static void Initialize(string path, Action afterInit)
@@ -32,13 +32,13 @@ namespace EP.U3D.RUNTIME.ILR
             AppDomain = new AppDomain();
             if (File.Exists(pdbPath))
             {
-                dllFs = new FileStream(dll, FileMode.Open, FileAccess.Read);
+                dllFs = new MemoryStream(Helper.DecryptBytes(Helper.OpenFile(dll)));
                 pdbFs = new FileStream(pdbPath, FileMode.Open, FileAccess.Read);
                 AppDomain.LoadAssembly(dllFs, pdbFs, new PdbReaderProvider());
             }
             else
             {
-                dllFs = new FileStream(dll, FileMode.Open, FileAccess.Read);
+                dllFs = new MemoryStream(Helper.DecryptBytes(Helper.OpenFile(dll)));
                 AppDomain.LoadAssembly(dllFs);
             }
 
