@@ -326,11 +326,12 @@ namespace EP.U3D.RUNTIME.ILR
                     }
                 }
             }
-            if (Application.isPlaying) // release memory
-            {
-                Fields.Clear();
-                Fields = null;
-            }
+            // [20220725]: 为了保证源对象（已加载未实例化）的数据完整，故不作清理，是否会造成内存的多余引用，还需研究，lua的runtime同理
+            //if (Application.isPlaying) // release memory
+            //{
+            //    Fields.Clear();
+            //    Fields = null;
+            //}
             InitOK = true;
         }
 
