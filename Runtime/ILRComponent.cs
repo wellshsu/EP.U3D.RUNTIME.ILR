@@ -91,7 +91,7 @@ namespace EP.U3D.RUNTIME.ILR
         public static Type DType = null; // for dynamic addcomponent
         public static bool frame = false;
         public static readonly List<ILRComponent> comps = new List<ILRComponent>();
-        ILRComponent() { if (frame) comps.Add(this); }
+        public ILRComponent() { if (frame) comps.Add(this); }
         public static void BeforeHook(string asset = "")
         {
             frame = true;
